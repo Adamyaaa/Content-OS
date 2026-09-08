@@ -35,29 +35,34 @@ def analyze_video_content(
             except Exception as e:
                 print(f"Warning: Failed to load image {fp}: {e}")
                 
-    models_to_try = ["gemini-2.5-flash", "gemini-1.5-flash"]
+    models_to_try = ["gemini-2.5-flash", "gemini-3.5-flash-lite", "gemini-2.5-pro"]
     last_error = None
     
+    import time
     for m_name in models_to_try:
-        try:
-            response = client.models.generate_content(
-                model=m_name,
-                contents=contents,
-                config=types.GenerateContentConfig(
-                    system_instruction=ANALYSIS_SYSTEM_PROMPT,
-                    response_mime_type="application/json",
-                    temperature=0.2
+        for attempt in range(2):
+            try:
+                response = client.models.generate_content(
+                    model=m_name,
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        system_instruction=ANALYSIS_SYSTEM_PROMPT,
+                        response_mime_type="application/json",
+                        temperature=0.2
+                    )
                 )
-            )
-            
-            if not response.text:
-                raise ValueError("Received empty response from Gemini model")
                 
-            parsed_json = clean_json_response(response.text)
-            return ContentAnalysis.model_validate(parsed_json)
-        except Exception as e:
-            last_error = e
-            print(f"Gemini analysis attempt with {m_name} failed: {e}")
-            continue
+                if not response.text:
+                    raise ValueError("Received empty response from Gemini model")
+                    
+                parsed_json = clean_json_response(response.text)
+                return ContentAnalysis.model_validate(parsed_json)
+            except Exception as e:
+                last_error = e
+                print(f"Gemini analysis attempt with {m_name} (attempt {attempt+1}) failed: {e}")
+                if "503" in str(e):
+                    time.sleep(1.5)
+                    continue
+                break
             
     raise RuntimeError(f"Multimodal content analysis failed: {last_error}")

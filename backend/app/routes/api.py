@@ -293,3 +293,62 @@ def list_patterns():
 
     return base_patterns
 
+@router.post("/render-video/{analysis_id}")
+def render_video_endpoint(analysis_id: str):
+    """
+    Renders an animated 9:16 short-form video reel combining:
+    - AI scene visual frames (FLUX 0-OPEX)
+    - Ken Burns camera motion & on-screen animated text captions
+    - Neural voiceover audio track
+    """
+    result_path = RESULTS_DIR / f"{analysis_id}.json"
+    if not result_path.exists():
+        raise HTTPException(status_code=404, detail=f"Analysis '{analysis_id}' not found.")
+
+    try:
+        with open(result_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading analysis data: {e}")
+
+    generated = data.get("generated_content", {})
+    scene_breakdown = generated.get("scene_breakdown", [])
+    if not scene_breakdown:
+        raise HTTPException(status_code=400, detail="No scene breakdown available to render.")
+
+    from backend.app.services.video_render_service import render_complete_reel
+    from backend.app.services.voice_service import generate_voiceover
+
+    voiceover_audio_path = AUDIO_DIR / f"{analysis_id}_voiceover.mp3"
+    output_video_path = RESULTS_DIR / f"{analysis_id}_reel.mp4"
+
+    # Ensure voiceover exists; synthesize if missing
+    script_text = generated.get("script", "")
+    if script_text and not voiceover_audio_path.exists():
+        try:
+            generate_voiceover(script_text, voiceover_audio_path)
+            data["generated_content"]["voiceover_url"] = f"/data/audio/{analysis_id}_voiceover.mp3"
+        except Exception as e:
+            print(f"Warning: Failed to synthesize missing voiceover: {e}")
+
+    try:
+        render_complete_reel(
+            analysis_id=analysis_id,
+            scene_breakdown=scene_breakdown,
+            voiceover_audio_path=voiceover_audio_path,
+            output_video_path=output_video_path
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Video rendering failed: {str(e)}")
+
+    rendered_url = f"/data/results/{analysis_id}_reel.mp4"
+    data["generated_content"]["rendered_video_url"] = rendered_url
+
+    with open(result_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+    return {
+        "status": "success",
+        "rendered_video_url": rendered_url
+    }
+

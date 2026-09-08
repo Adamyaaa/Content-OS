@@ -9,12 +9,13 @@ import GeneratedContentCard from './components/GeneratedContentCard';
 import BrandQACard from './components/BrandQACard';
 import HistoryDrawer from './components/HistoryDrawer';
 import PatternLibraryView from './components/PatternLibraryView';
-import { checkHealth, analyzeVideo, fetchAnalysis, fetchAnalysesList, fetchPatterns } from './services/api';
+import { checkHealth, analyzeVideo, fetchAnalysis, fetchAnalysesList, fetchPatterns, renderVideoReel } from './services/api';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('analyzer'); // 'analyzer' | 'patterns'
   const [health, setHealth] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isRenderingVideo, setIsRenderingVideo] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [error, setError] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -76,7 +77,34 @@ export default function App() {
     setAnalysisResult(null);
     setError('');
     setIsAnalyzing(false);
+    setIsRenderingVideo(false);
     setActiveTab('analyzer');
+  };
+
+  const handleRenderVideo = async () => {
+    if (!analysisResult?.analysis_id) return;
+    setIsRenderingVideo(true);
+    setError('');
+
+    try {
+      const renderRes = await renderVideoReel(analysisResult.analysis_id);
+      const videoUrl = renderRes.rendered_video_url || renderRes.video_url;
+      if (videoUrl) {
+        setAnalysisResult((prev) => ({
+          ...prev,
+          generated_content: {
+            ...prev.generated_content,
+            rendered_video_url: videoUrl,
+          },
+        }));
+        await refreshData();
+      }
+    } catch (err) {
+      console.error('Video render error:', err);
+      setError(err.message || 'Failed to render 9:16 video reel.');
+    } finally {
+      setIsRenderingVideo(false);
+    }
   };
 
   return (
@@ -111,8 +139,12 @@ export default function App() {
             {/* 3. Why It Works (Formula & Retention) */}
             <WhyItWorksCard analysis={analysisResult.analysis} />
 
-            {/* 4. Generated Content & Storyboard (Hero with Voiceover Player) */}
-            <GeneratedContentCard generatedContent={analysisResult.generated_content} />
+            {/* 4. Generated Content & Storyboard (Hero with Voiceover Player & 9:16 Reel) */}
+            <GeneratedContentCard
+              generatedContent={analysisResult.generated_content}
+              onRenderVideo={handleRenderVideo}
+              isRenderingVideo={isRenderingVideo}
+            />
 
             {/* 5. Brand QA & Compliance Critic */}
             <BrandQACard

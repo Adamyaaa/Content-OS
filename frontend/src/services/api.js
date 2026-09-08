@@ -68,3 +68,18 @@ export async function fetchPatterns() {
     return [];
   }
 }
+
+export async function renderVideoReel(analysisId) {
+  const res = await fetch(`${API_BASE}/render-video/${analysisId}`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    let err = 'Failed to render video reel';
+    try {
+      const data = await res.json();
+      err = data.detail || err;
+    } catch {}
+    throw new Error(err);
+  }
+  return await res.json();
+}
