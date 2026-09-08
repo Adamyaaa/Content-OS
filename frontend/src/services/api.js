@@ -57,3 +57,14 @@ export async function fetchAnalysesList() {
     return [];
   }
 }
+
+export async function fetchPatterns() {
+  try {
+    const res = await fetch(`${API_BASE}/patterns`);
+    if (!res.ok) throw new Error('Failed to load patterns');
+    return await res.json();
+  } catch (err) {
+    console.error('Error fetching patterns:', err);
+    return [];
+  }
+}

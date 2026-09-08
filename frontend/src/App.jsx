@@ -8,30 +8,37 @@ import WhyItWorksCard from './components/WhyItWorksCard';
 import GeneratedContentCard from './components/GeneratedContentCard';
 import BrandQACard from './components/BrandQACard';
 import HistoryDrawer from './components/HistoryDrawer';
-import { checkHealth, analyzeVideo, fetchAnalysis, fetchAnalysesList } from './services/api';
+import PatternLibraryView from './components/PatternLibraryView';
+import { checkHealth, analyzeVideo, fetchAnalysis, fetchAnalysesList, fetchPatterns } from './services/api';
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState('analyzer'); // 'analyzer' | 'patterns'
   const [health, setHealth] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [error, setError] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
   const [pastRuns, setPastRuns] = useState([]);
+  const [patterns, setPatterns] = useState([]);
 
-  // Load system health and past runs list on mount
+  // Load health, history, and pattern library on mount
   useEffect(() => {
     async function init() {
       const h = await checkHealth();
       setHealth(h);
       const runs = await fetchAnalysesList();
       setPastRuns(runs);
+      const pats = await fetchPatterns();
+      setPatterns(pats);
     }
     init();
   }, []);
 
-  const refreshHistory = async () => {
+  const refreshData = async () => {
     const runs = await fetchAnalysesList();
     setPastRuns(runs);
+    const pats = await fetchPatterns();
+    setPatterns(pats);
   };
 
   const handleUploadFile = async (file) => {
@@ -42,7 +49,7 @@ export default function App() {
     try {
       const result = await analyzeVideo(file);
       setAnalysisResult(result);
-      await refreshHistory();
+      await refreshData();
     } catch (err) {
       console.error('Analysis error:', err);
       setError(err.message || 'An unexpected error occurred during processing.');
@@ -54,6 +61,7 @@ export default function App() {
   const handleSelectRun = async (analysisId) => {
     setError('');
     setIsAnalyzing(true);
+    setActiveTab('analyzer');
     try {
       const result = await fetchAnalysis(analysisId);
       setAnalysisResult(result);
@@ -68,6 +76,7 @@ export default function App() {
     setAnalysisResult(null);
     setError('');
     setIsAnalyzing(false);
+    setActiveTab('analyzer');
   };
 
   return (
@@ -78,11 +87,18 @@ export default function App() {
         onOpenHistory={() => setHistoryOpen(true)}
         historyCount={pastRuns.length}
         onReset={handleReset}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
       />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {isAnalyzing ? (
+        {activeTab === 'patterns' ? (
+          <PatternLibraryView
+            patterns={patterns}
+            onSelectPatternDemo={() => handleSelectRun('sample_demo')}
+          />
+        ) : isAnalyzing ? (
           <ProcessingTracker />
         ) : analysisResult ? (
           <div className="space-y-8 animate-fadeIn">
@@ -95,7 +111,7 @@ export default function App() {
             {/* 3. Why It Works (Formula & Retention) */}
             <WhyItWorksCard analysis={analysisResult.analysis} />
 
-            {/* 4. Generated Content & Storyboard (Hero) */}
+            {/* 4. Generated Content & Storyboard (Hero with Voiceover Player) */}
             <GeneratedContentCard generatedContent={analysisResult.generated_content} />
 
             {/* 5. Brand QA & Compliance Critic */}
@@ -120,7 +136,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
           <p>© 2026 Organic Journals • Client Demo Prototype</p>
           <p className="flex items-center space-x-2">
-            <span>Powered by Groq Whisper & Gemini 2.5 Flash</span>
+            <span>Powered by Groq Whisper, Gemini 2.5 Flash & Edge Neural Audio</span>
           </p>
         </div>
       </footer>

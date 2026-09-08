@@ -1,7 +1,14 @@
 import React from 'react';
-import { Sprout, History, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Sprout, History, AlertCircle, Sparkles, Database } from 'lucide-react';
 
-export default function Header({ health, onOpenHistory, historyCount, onReset }) {
+export default function Header({
+  health,
+  onOpenHistory,
+  historyCount,
+  onReset,
+  activeTab,
+  onTabChange
+}) {
   const isHealthy = health && health.groq_configured && health.gemini_configured;
 
   return (
@@ -31,11 +38,38 @@ export default function Header({ health, onOpenHistory, historyCount, onReset })
           </div>
         </div>
 
+        {/* Center Tabs: Analyzer vs Pattern Library */}
+        <div className="hidden md:flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <button
+            onClick={() => onTabChange('analyzer')}
+            className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+              activeTab === 'analyzer'
+                ? 'bg-white text-emerald-950 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Reel Analyzer</span>
+          </button>
+
+          <button
+            onClick={() => onTabChange('patterns')}
+            className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+              activeTab === 'patterns'
+                ? 'bg-white text-emerald-950 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Database className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Pattern Library (The Moat)</span>
+          </button>
+        </div>
+
         {/* Right Actions: System Status & History */}
         <div className="flex items-center space-x-3">
           {/* Health Status Pill */}
           <div 
-            className={`hidden md:flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
+            className={`hidden lg:flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
               isHealthy
                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                 : 'bg-amber-50 text-amber-700 border-amber-200'
