@@ -1,0 +1,222 @@
+import React, { useState } from 'react';
+import { Sparkles, Copy, Check, Clapperboard, Clock, Video, FileText, MessageSquareQuote } from 'lucide-react';
+
+export default function GeneratedContentCard({ generatedContent }) {
+  const [copied, setCopied] = useState(false);
+
+  if (!generatedContent) return null;
+
+  const {
+    content_concept,
+    title,
+    hook,
+    hook_type,
+    script,
+    scene_breakdown,
+    visual_directions,
+    on_screen_text,
+    cta,
+    estimated_duration_seconds
+  } = generatedContent;
+
+  const wordCount = script ? script.trim().split(/\s+/).length : 0;
+
+  const handleCopyScript = () => {
+    if (!script) return;
+    navigator.clipboard.writeText(script);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border-2 border-emerald-500/80 overflow-hidden shadow-md">
+      {/* Header Banner */}
+      <div className="bg-emerald-600 px-6 py-4 text-white flex items-center justify-between">
+        <div className="flex items-center space-x-2.5">
+          <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold tracking-tight">Generated Original Concept & Script</h3>
+            <p className="text-xs text-emerald-100">Formula-adapted original short-form concept for Organic Journals</p>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <span className="text-xs font-semibold bg-white/20 px-3 py-1 rounded-full text-white">
+            Brand Safe • Compliant
+          </span>
+        </div>
+      </div>
+
+      <div className="p-6 space-y-8">
+        {/* Concept & Title Hero */}
+        <div className="p-5 rounded-2xl bg-emerald-50/50 border border-emerald-200/80">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
+              Fresh Reel Concept
+            </span>
+            <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+              ~{estimated_duration_seconds || 30}s Run Time
+            </span>
+          </div>
+
+          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight mb-2">
+            {title}
+          </h2>
+
+          <p className="text-sm text-slate-700 leading-relaxed mb-4">
+            {content_concept}
+          </p>
+
+          <div className="pt-3 border-t border-emerald-200/60 flex flex-wrap items-center gap-3">
+            <span className="text-xs font-bold text-emerald-900">Opening Hook ({hook_type}):</span>
+            <span className="text-xs font-medium text-slate-800 italic bg-white/80 px-3 py-1 rounded-md border border-emerald-200">
+              "{hook}"
+            </span>
+          </div>
+        </div>
+
+        {/* Script Section */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-2">
+              <FileText className="w-4 h-4 text-emerald-600" />
+              <h4 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+                Spoken Script (Voiceover)
+              </h4>
+              <span className="text-xs text-slate-500 font-medium">
+                ({wordCount} words • ~{Math.round(wordCount / 2.5)}s speaking pace)
+              </span>
+            </div>
+
+            <button
+              onClick={handleCopyScript}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow-xs ${
+                copied
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+              }`}
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Script Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy Full Script</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="p-5 rounded-xl bg-slate-900 text-slate-100 font-sans leading-relaxed text-sm shadow-inner whitespace-pre-line border border-slate-800">
+            {script}
+          </div>
+
+          {/* CTA Box */}
+          <div className="mt-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Ending CTA:</span>
+              <span className="text-xs font-medium text-slate-900 italic">"{cta}"</span>
+            </div>
+            <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-medium">
+              Educational CTA
+            </span>
+          </div>
+        </div>
+
+        {/* Visual Direction / Scene Breakdown */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <Clapperboard className="w-4 h-4 text-emerald-600" />
+              <h4 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+                Visual Directions & Scene Breakdown
+              </h4>
+            </div>
+            <span className="text-xs text-slate-500">
+              {scene_breakdown?.length || 0} Scene Storyboard
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {scene_breakdown?.map((scene, idx) => (
+              <div
+                key={idx}
+                className="p-4 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="w-6 h-6 rounded-md bg-emerald-600 text-white font-bold text-xs flex items-center justify-center">
+                      {idx + 1}
+                    </span>
+                    <span className="text-xs font-bold text-slate-900">
+                      Scene {idx + 1}
+                    </span>
+                    <span className="text-xs font-mono text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
+                      {scene.timestamp}
+                    </span>
+                  </div>
+
+                  <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full">
+                    {scene.purpose}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs mt-3">
+                  {/* Visual */}
+                  <div className="bg-white p-3 rounded-lg border border-slate-200/80">
+                    <span className="font-bold text-slate-700 block mb-1 text-[11px] uppercase tracking-wide">
+                      Visual Direction:
+                    </span>
+                    <p className="text-slate-800 leading-relaxed">{scene.visual}</p>
+                  </div>
+
+                  {/* Voiceover */}
+                  <div className="bg-white p-3 rounded-lg border border-slate-200/80">
+                    <span className="font-bold text-slate-700 block mb-1 text-[11px] uppercase tracking-wide">
+                      Voiceover / Line:
+                    </span>
+                    <p className="text-slate-900 font-medium italic leading-relaxed">
+                      "{scene.voiceover}"
+                    </p>
+                  </div>
+
+                  {/* On-screen Text */}
+                  <div className="bg-white p-3 rounded-lg border border-slate-200/80">
+                    <span className="font-bold text-slate-700 block mb-1 text-[11px] uppercase tracking-wide">
+                      On-Screen Text Overlay:
+                    </span>
+                    <p className="text-emerald-700 font-bold bg-emerald-50/70 p-1.5 rounded inline-block">
+                      {scene.on_screen_text || 'None'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* General Creator Directives */}
+          {visual_directions?.length > 0 && (
+            <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 block mb-2">
+                Production & Camera Notes:
+              </span>
+              <ul className="space-y-1 text-xs text-slate-600">
+                {visual_directions.map((dir, i) => (
+                  <li key={i} className="flex items-start space-x-2">
+                    <span className="text-emerald-600 font-bold">•</span>
+                    <span>{dir}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
