@@ -43,7 +43,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated }) {
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/settings');
+      const res = await fetch('https://organic-content-os-backend.onrender.com/api/settings');
       if (res.ok) {
         const data = await res.json();
         setSettingsData(data);
@@ -72,7 +72,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated }) {
     setTestingProvider(provider);
     try {
       // If testing existing masked key, we submit an empty string or the field value
-      const res = await fetch('/api/settings/test-key', {
+      const res = await fetch('https://organic-content-os-backend.onrender.com/api/settings/test-key', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -106,7 +106,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated }) {
         }
       });
 
-      const res = await fetch('/api/settings', {
+      const res = await fetch('https://organic-content-os-backend.onrender.com/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

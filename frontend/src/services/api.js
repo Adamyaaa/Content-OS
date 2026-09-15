@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+const API_BASE = 'https://organic-content-os-backend.onrender.com/api';
 
 export async function checkHealth() {
   try {

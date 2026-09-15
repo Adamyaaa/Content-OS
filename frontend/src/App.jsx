@@ -71,7 +71,7 @@ export default function App() {
     setResultTab('tier1');
 
     try {
-      const response = await fetch('/api/analyze-url', {
+      const response = await fetch('https://organic-content-os-backend.onrender.com/api/analyze-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
