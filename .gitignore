@@ -43,12 +43,14 @@ dist-ssr/
 # Media and Processed Uploads (Keep directories, ignore contents)
 backend/data/uploads/*
 !backend/data/uploads/.gitkeep
+!backend/data/uploads/sample_demo.mp4
 backend/data/audio/*
 !backend/data/audio/.gitkeep
 backend/data/frames/*
 !backend/data/frames/.gitkeep
 backend/data/results/*
 !backend/data/results/.gitkeep
+!backend/data/results/sample_demo.json
 
 # IDEs & OS files
 .vscode/

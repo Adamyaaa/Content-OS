@@ -1,0 +1,144 @@
+{
+  "analysis_id": "sample_demo",
+  "filename": "spring_soil_mistakes_reel.mp4",
+  "created_at": "2026-09-08T10:30:00.000000",
+  "video_url": "/data/uploads/sample_demo.mp4",
+  "video_duration": 28.5,
+  "frame_urls": [
+    "/data/frames/sample_demo/frame_01.jpg",
+    "/data/frames/sample_demo/frame_02.jpg",
+    "/data/frames/sample_demo/frame_03.jpg",
+    "/data/frames/sample_demo/frame_04.jpg",
+    "/data/frames/sample_demo/frame_05.jpg",
+    "/data/frames/sample_demo/frame_06.jpg",
+    "/data/frames/sample_demo/frame_07.jpg"
+  ],
+  "transcript": {
+    "text": "Stop tilling your soil every spring! Here are three common soil mistakes gardeners make before planting tomatoes. Mistake one: digging too deep and disrupting mycorrhizal fungal networks. Mistake two: using fresh animal manure that burns delicate feeder roots. Mistake three: guessing your soil pH without a simple litmus test. Save your soil biology this season!",
+    "language": "en",
+    "duration": 28.5
+  },
+  "analysis": {
+    "topic": "Spring soil preparation pitfalls for tomato growers",
+    "hook": "Stop tilling your soil every spring! Here are three common soil mistakes...",
+    "hook_type": "Pattern Interrupt / Problem Warning",
+    "content_format": "Field Demonstration + Rapid Problem Listicle",
+    "narrative_structure": [
+      "Negative Hook (Disruptive command)",
+      "Problem Revelation (Mycorrhizal fungal disruption)",
+      "Second Pitfall (Root burn from raw manure)",
+      "Third Pitfall (pH imbalance guesswork)",
+      "Actionable Soil Takeaway & CTA"
+    ],
+    "visual_style": "Natural outdoor garden daylight, macro soil close-ups, handheld camera framing",
+    "visual_pattern": "Dynamic 3-second cuts alternating between narrator face and soil crumb texture",
+    "target_audience": "Backyard gardeners, permaculture enthusiasts, and small-scale organic growers",
+    "emotional_trigger": "Urgency, fear of wasted gardening labor, desire for healthy produce",
+    "cta": "Save your soil biology this season and follow for more organic tips.",
+    "key_claims": [
+      "Tilling disrupts mycorrhizal fungal networks in the topsoil",
+      "Fresh uncomposted manure burns delicate feeder roots due to high ammonia",
+      "Soil pH directly dictates nutrient bioavailability to plants"
+    ],
+    "content_strengths": [
+      "Immediate high-retention negative hook stopping the scroll",
+      "Grounded in observable soil biology rather than vague generic advice",
+      "Fast 3-point listicle keeping viewer anticipation high"
+    ],
+    "why_it_might_work": [
+      "High completion rate due to compact numbered delivery",
+      "Strong bookmark/save driver because growers reference soil tips during planting season"
+    ],
+    "content_pattern": "Disruptive Negative Hook + Numbered Ecological Mistakes + Observable Field Fix"
+  },
+  "generated_content": {
+    "content_concept": "An educational guide diagnosing physical and biological indicators of degraded garden soil, offering biological compost restoration techniques instead of synthetic chemical inputs.",
+    "title": "3 Signs Your Soil Is Starving For Organic Matter",
+    "hook": "If your garden soil feels like concrete after it rains, your soil biology is starving.",
+    "hook_type": "Sensory Problem Agitation",
+    "script": "If your garden soil feels like concrete after it rains, your soil biology is starving. Here are three unmistakable signs your soil needs living organic matter right now. First: water pooling on the surface instead of absorbing like a sponge. That means your soil has lost its crumb structure. Second: zero earthworm activity when you dig down four inches. Earthworms are nature's soil aerators. And third: pale, stunted seedling growth despite regular watering. Don't reach for synthetic quick fixes that scorch the soil microbiome. Instead, top-dress with two inches of well-aged compost and let soil organisms do the heavy lifting. Follow Organic Journals for weekly regenerative soil guides.",
+    "scene_breakdown": [
+      {
+        "timestamp": "0-3s",
+        "purpose": "Hook & Pain Point",
+        "visual": "Close-up hand squeezing cracked, hard-baked soil in a garden bed under direct sunlight.",
+        "voiceover": "If your garden soil feels like concrete after it rains, your soil biology is starving.",
+        "on_screen_text": "Is your soil starving?"
+      },
+      {
+        "timestamp": "3-10s",
+        "purpose": "Sign 1: Compaction & Runoff",
+        "visual": "Pouring a small watering can over compacted bed; water puddles and runs off without soaking.",
+        "voiceover": "First: water pooling on the surface instead of absorbing like a sponge. That means your soil has lost its crumb structure.",
+        "on_screen_text": "Sign 1: Water pooling"
+      },
+      {
+        "timestamp": "10-18s",
+        "purpose": "Sign 2: Biological Absence",
+        "visual": "Hand trowel turning over a small soil plug; showing dense, pale earth with no worm casts.",
+        "voiceover": "Second: zero earthworm activity when you dig down four inches. Earthworms are nature's soil aerators.",
+        "on_screen_text": "Sign 2: No worm life"
+      },
+      {
+        "timestamp": "18-28s",
+        "purpose": "Solution & Brand CTA",
+        "visual": "Spreading rich, dark living compost across the surface of the bed, gently raking it in.",
+        "voiceover": "Don't reach for synthetic quick fixes. Top-dress with two inches of mature compost and follow Organic Journals for regenerative guides.",
+        "on_screen_text": "Top-dress with compost"
+      }
+    ],
+    "visual_directions": [
+      "Use macro camera framing to showcase soil texture contrast (hard cracked soil vs crumbly dark compost)",
+      "Ensure bright natural morning light for authentic organic farm aesthetic",
+      "Keep pacing brisk with 2.5 to 3 second shot transitions"
+    ],
+    "on_screen_text": [
+      "Is your soil starving?",
+      "Sign 1: Water pooling",
+      "Sign 2: Zero earthworms",
+      "Feed the soil biology"
+    ],
+    "cta": "Follow Organic Journals for weekly regenerative soil guides.",
+    "estimated_duration_seconds": 28,
+    "voiceover_url": "/data/audio/sample_demo_voiceover.mp3",
+    "rendered_video_url": "/data/results/sample_demo_reel.mp4",
+    "deduplication_score": 32.5,
+    "deduplication_status": "Approved: Unique Angle (<70% threshold)"
+  },
+  "qa_result": {
+    "status": "PASS",
+    "overall_score": 92,
+    "checks": [
+      {
+        "name": "Brand tone",
+        "status": "PASS",
+        "reason": "Warm, practical peer-to-peer farmer voice focused on soil microbiology and stewardship."
+      },
+      {
+        "name": "Unsupported claims",
+        "status": "PASS",
+        "reason": "Properly avoids unverified 'chemical-free' phrasing and absolute cure-all statements; correctly attributes structure to living organic matter."
+      },
+      {
+        "name": "Originality",
+        "status": "PASS",
+        "reason": "Transfers the 3-point diagnostic structure into a completely fresh, brand-aligned educational topic on organic matter."
+      },
+      {
+        "name": "Hook strength",
+        "status": "PASS",
+        "reason": "Strong sensory hook ('feels like concrete after it rains') instantly resonates with growers."
+      },
+      {
+        "name": "CTA",
+        "status": "PASS",
+        "reason": "Community-focused educational CTA with zero high-pressure sales tactics."
+      }
+    ],
+    "issues": [],
+    "suggestions": [
+      "In the voiceover, recommend checking local soil temperature before adding thick mulch layers in early spring."
+    ]
+  },
+  "production_readiness": "Ready for production"
+}
