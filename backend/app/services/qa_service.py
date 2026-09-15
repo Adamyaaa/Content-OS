@@ -1,7 +1,7 @@
 from google import genai
 from google.genai import types
 
-from backend.app.config import GEMINI_API_KEY
+from backend.app.config import get_gemini_api_key
 from backend.app.config.brand import BRAND_CONFIG
 from backend.app.models.schemas import ContentAnalysis, GeneratedContent, QAResult
 from backend.app.prompts.qa_prompt import QA_SYSTEM_PROMPT, get_qa_prompt
@@ -15,13 +15,14 @@ def evaluate_brand_qa(
     Run an independent QA critic evaluation against brand guardrails,
     unsupported claims (especially 'chemical-free'), originality, and hook strength.
     """
-    if not GEMINI_API_KEY or GEMINI_API_KEY == "your_gemini_api_key_here":
-        raise ValueError("Gemini API Key is not configured. Please add GEMINI_API_KEY to your .env file.")
+    api_key = get_gemini_api_key()
+    if not api_key or api_key == "your_gemini_api_key_here":
+        raise ValueError("Gemini API Key is not configured. Please configure your API key in Settings.")
         
-    client = genai.Client(api_key=GEMINI_API_KEY)
+    client = genai.Client(api_key=api_key)
     prompt = get_qa_prompt(analysis.model_dump(), generated.model_dump(), BRAND_CONFIG)
     
-    models_to_try = ["gemini-2.5-flash", "gemini-3.5-flash-lite", "gemini-2.5-pro"]
+    models_to_try = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro-preview"]
     last_error = None
     
     import time

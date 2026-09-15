@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sprout, History, AlertCircle, Sparkles, Database } from 'lucide-react';
+import { Sprout, History, AlertCircle, Sparkles, Database, Settings } from 'lucide-react';
 
 export default function Header({
   health,
@@ -7,7 +7,8 @@ export default function Header({
   historyCount,
   onReset,
   activeTab,
-  onTabChange
+  onTabChange,
+  onOpenSettings
 }) {
   const isHealthy = health && health.groq_configured && health.gemini_configured;
 
@@ -65,20 +66,17 @@ export default function Header({
           </button>
         </div>
 
-        {/* Right Actions: System Status & History */}
-        <div className="flex items-center space-x-3">
-          {/* Health Status Pill */}
+        {/* Right Actions: System Status, Settings & History */}
+        <div className="flex items-center space-x-2.5">
+          {/* Health Status Pill (Clickable) */}
           <div 
-            className={`hidden lg:flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
+            onClick={onOpenSettings}
+            className={`hidden lg:flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium border cursor-pointer hover:opacity-90 transition ${
               isHealthy
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                : 'bg-amber-50 text-amber-700 border-amber-200'
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100/70'
+                : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100/70'
             }`}
-            title={
-              isHealthy
-                ? 'Groq Whisper & Gemini 2.5 Flash connected'
-                : 'Configure GROQ_API_KEY and GEMINI_API_KEY in .env'
-            }
+            title="Click to view & configure API Keys & Engines"
           >
             {isHealthy ? (
               <>
@@ -92,6 +90,16 @@ export default function Header({
               </>
             )}
           </div>
+
+          {/* Settings Button */}
+          <button
+            onClick={onOpenSettings}
+            className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 rounded-lg transition"
+            title="API Keys & Settings"
+          >
+            <Settings className="w-3.5 h-3.5 text-slate-500" />
+            <span className="hidden sm:inline">Settings</span>
+          </button>
 
           {/* Past Analyses Button */}
           <button

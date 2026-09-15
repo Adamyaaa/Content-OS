@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from typing import Dict, Any
 from groq import Groq
-from backend.app.config import GROQ_API_KEY
+from backend.app.config import get_groq_api_key
 
 def transcribe_audio(audio_path: Path) -> Dict[str, Any]:
     """
@@ -14,14 +14,15 @@ def transcribe_audio(audio_path: Path) -> Dict[str, Any]:
         "duration": 28.5
     }
     """
-    if not GROQ_API_KEY or GROQ_API_KEY == "your_groq_api_key_here":
-        raise ValueError("Groq API Key is not configured. Please add GROQ_API_KEY to your .env file.")
+    api_key = get_groq_api_key()
+    if not api_key or api_key == "your_groq_api_key_here":
+        raise ValueError("Groq API Key is not configured. Please configure GROQ_API_KEY in Settings.")
         
     if not audio_path.exists():
         raise FileNotFoundError(f"Audio file not found: {audio_path}")
 
     try:
-        client = Groq(api_key=GROQ_API_KEY)
+        client = Groq(api_key=api_key)
         
         with open(audio_path, "rb") as file_handle:
             transcription = client.audio.transcriptions.create(

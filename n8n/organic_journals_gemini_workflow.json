@@ -1,0 +1,973 @@
+{
+  "name": "Organic Journals - AI Video Generator and Social Publisher (PRD Aligned)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "id": "5dc32de6-f6a9-48e1-8825-6578926a0d5e",
+      "name": "Once Per Day",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -2336,
+        864
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "Brand Name",
+              "type": "string",
+              "value": "Organic Journals"
+            },
+            {
+              "id": "c2",
+              "name": "Industry",
+              "type": "string",
+              "value": "Organic Farming and Soil Biology"
+            },
+            {
+              "id": "35659353-d8e2-4677-876b-401b549605a0",
+              "name": "PiAPI Key",
+              "type": "string",
+              "value": "b0bd814debc54d704f15f66196e77db677bb7eb34dac429bec84f85f1fb955cd"
+            },
+            {
+              "id": "c4927dd6-c597-48fe-b7c1-bbffcf5ff02f",
+              "name": "ElevenLabs API Key",
+              "type": "string",
+              "value": "sk_959903f11c104e671aa3d9c61fcd76d81d6362b7696827b9"
+            },
+            {
+              "id": "d0ebba50-5a99-4090-adcb-d18aa0b21be2",
+              "name": "Creatomate Template ID",
+              "type": "string",
+              "value": "d01689d3-9411-454a-8a37-6e8a329394d5"
+            },
+            {
+              "id": "1951fb60-205a-4350-9cb5-8e48333e1fb7",
+              "name": "Creatomate API Key",
+              "value": "5ebd849f8ba64cb5844b49584755474a30da695e2a6309f8088d622dd4ab0faf2fcb15ad8b98c27151094051220e2204",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5f21922e-364d-4330-a0fb-41ff9e548fc9",
+      "name": "Set API Keys and Brand Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -2112,
+        864
+      ],
+      "notesInFlow": true,
+      "typeVersion": 3.4,
+      "notes": "Organic Journals Configuration"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1cjd8p_yx-M-3gWLEd5TargtoB35cW-3y66AOTNMQrrM",
+          "cachedResultName": "Organic Content Pipeline"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultName": "Sheet1"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "production",
+              "lookupValue": "for production"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "id": "eff753ff-6340-4f1f-9e05-85fb694b2042",
+      "name": "Load Content Pipeline (Google Sheet)",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        -1920,
+        864
+      ],
+      "typeVersion": 4.5,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Gn4KTzqGcXsgnWzA",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get text from Gemini or OpenAI response\nconst data = $input.first().json;\nconst text = data.text || (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || (data.response && data.response.text) || '';\nconst lines = text.split('\\n').map(line => line.trim().replace(/^[-*\\d.]+\\s*/, '')).filter(line => line.length > 3);\nreturn lines.map(line => ({\n  json: {\n    response: { text: line }\n  }\n}));"
+      },
+      "id": "ccfd1171-12f8-40c4-957e-8b3f0fb154a8",
+      "name": "Create List",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1200,
+        752
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "2681c0e9-aa45-4f0f-8933-6e6de324c7aa",
+              "operator": {
+                "type": "array",
+                "operation": "lengthGt",
+                "rightType": "number"
+              },
+              "leftValue": "={{$input.all()}}",
+              "rightValue": 1
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "afe043df-419f-45bf-ad3a-7a953033382a",
+      "name": "Validate list formatting",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -1200,
+        880
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a cinematography director specializing in 9:16 vertical organic agriculture video prompts for Flux and Kling AI.\nRules:\n- NEVER include quotation marks or emojis.\n- POV perspective: Farmer hands interacting with fertile dark soil, organic plants, or garden tools.\n- Natural morning sunlight, macro camera detail, photorealistic 8k vertical framing.\n- Output exactly one sentence under 400 characters.\n\nGenerate a cinematic Flux visual prompt for this organic farming scene: {{ $json.response.text }}",
+        "messages": {
+          "messageValues": []
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -1088,
+        160
+      ],
+      "id": "c46e01a1-9b12-4f67-8910-fluxchain001",
+      "name": "Generate Photorealistic Flux Prompts"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -1088,
+        360
+      ],
+      "id": "c46e01a1-9b12-4f67-8910-fluxmodel001",
+      "name": "Gemini Model - Flux Prompts",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "XZRrHYTK9eePHmgw",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nreturn items.map(item => ({\n  json: {\n    ...item.json,\n    flux_prompt: item.json.text || (item.json.choices && item.json.choices[0] && item.json.choices[0].message && item.json.choices[0].message.content) || ''\n  }\n}));"
+      },
+      "id": "8ba5d7b4-3f49-4943-a52f-92d106c68ba7",
+      "name": "Calculate Token Usage",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -784,
+        160
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.piapi.ai/api/v1/task",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $('Set API Keys and Brand Config').item.json['PiAPI Key'] }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"model\": \"Qubico/flux1-dev\",\n  \"task_type\": \"txt2img\",\n  \"input\": {\n    \"prompt\": \"{{ $json.flux_prompt || $json.text }} 8k cinematic vertical agriculture realism 9:16 natural morning sunlight\",\n    \"negative_prompt\": \"blurry, text, cartoon, drawing, distorted hands, artificial, oversaturated\",\n    \"width\": 540,\n    \"height\": 960\n  }\n}",
+        "options": {}
+      },
+      "id": "09847847-2205-4175-a88f-310f039b40b4",
+      "name": "Generate Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -608,
+        80
+      ],
+      "retryOnFail": false,
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "minutes"
+      },
+      "id": "b53ebeae-770f-45a2-8049-7f541cf7651e",
+      "name": "Wait 3min",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        -464,
+        80
+      ],
+      "webhookId": "77cdee73-5e99-456a-b5e7-410b4d257669",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "url": "=https://api.piapi.ai/api/v1/task/{{ $json.data.task_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $('Set API Keys and Brand Config').item.json['PiAPI Key'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3d1d8963-0eea-45fd-a8b1-7466bae897bf",
+      "name": "Get image",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -320,
+        80
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "567d1fc9-0638-4a44-b5f5-30a9a6683794",
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "failed"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d14a7e4a-d0bb-4360-abcf-cc969af8c765",
+      "name": "Check for failures",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -176,
+        80
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "unit": "minutes"
+      },
+      "id": "cfaa9e22-38ff-49b0-a567-b6c0d68f8e75",
+      "name": "Wait 5min",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "31d5b1a2-dbb5-4849-ae25-cb491539c16e",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.piapi.ai/api/v1/task",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $('Set API Keys and Brand Config').item.json['PiAPI Key'] }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"model\": \"kling\",\n  \"task_type\": \"video_generation\",\n  \"input\": {\n    \"prompt\": \"Smooth slow camera push-in on organic garden soil and vibrant plants, natural breeze\",\n    \"negative_prompt\": \"blurry motion, distorted faces, unnatural lighting, bad quality\",\n    \"duration\": 5,\n    \"mode\": \"std\",\n    \"image_url\": \"{{ $json.data.output.image_url }}\",\n    \"version\": \"1.6\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b8d98d38-3d84-4c85-96f7-57eff13463b4",
+      "name": "Image-to-Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -960,
+        608
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "amount": 10,
+        "unit": "minutes"
+      },
+      "id": "6b2052e6-15de-4657-9058-81adb511c065",
+      "name": "Wait 10min",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        -816,
+        608
+      ],
+      "webhookId": "1f9d716f-6544-4e4e-94ec-408ac3ea6e82",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "url": "=https://api.piapi.ai/api/v1/task/{{ $json.data.task_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $('Set API Keys and Brand Config').item.json['PiAPI Key'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7a79570d-1047-4234-a42a-efb4d09ad94c",
+      "name": "Get Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -704,
+        608
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "a920eb54-fc23-4b68-8f56-2eee907a5481",
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "failed"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "09ab6a2b-5df7-41e6-85ca-c991da19d1d7",
+      "name": "Fail check",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -560,
+        608
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "unit": "minutes"
+      },
+      "id": "2b310acf-addb-4164-9622-e3f5e55367f3",
+      "name": "Wait to retry",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        -416,
+        560
+      ],
+      "webhookId": "3b0fae8f-4419-45cd-8380-8f72eca05ff8",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "id": "8e029b1a-f2af-4d44-9389-2954d2b21ca4",
+      "name": "Match captions with videos",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        -240,
+        640
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    scene_titles: items.map(item => item.json.response.text),\n    video_urls: items.map(item => item.json.data.output.video_url),\n    input_tokens: $('Calculate Token Usage').first().json.total_prompt_tokens,\n    output_tokens: $('Calculate Token Usage').first().json.total_completion_tokens,\n    model: $('Generate Photorealistic Flux Prompts').first().json.model\n  }\n];"
+      },
+      "id": "2b246bb3-83d3-4874-b925-e9ec1f559ae4",
+      "name": "List Elements",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -80,
+        640
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are the voice of Organic Journals: a warm, practical, evidence-based organic farmer and soil microbiologist.\nYou are provided with 5 short scene titles from our content planner:\n{{ $('Create List').all().map(i => '- ' + i.json.response.text).join('\\n') }}\n\nCraft an authentic, spoken-word 25-second voiceover script connecting these 5 scenes.\nRules: Never use the word chemical-free without scientific proof, avoid absolute cure-all statements, focus on soil biology, and end with: Follow Organic Journals for weekly regenerative soil tips. No emojis, no quotes.",
+        "messages": {
+          "messageValues": []
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -960,
+        1072
+      ],
+      "id": "c46e01a1-9b12-4f67-8910-scriptchn002",
+      "name": "Generate Script"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -960,
+        1272
+      ],
+      "id": "c46e01a1-9b12-4f67-8910-scriptmdl002",
+      "name": "Gemini Model - Script",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "XZRrHYTK9eePHmgw",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/onwK4e9ZLuTAKqWW03F9",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "={{ $('Set API Keys and Brand Config').item.json['ElevenLabs API Key'] }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1ceb559f-d6fb-47f5-b5f2-0398f0310f9d",
+      "name": "Generate voice",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -608,
+        1072
+      ],
+      "retryOnFail": false,
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Load Content Pipeline (Google Sheet)').item.json.id }}-voiceover.mp3",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "id": "16af6a6e-5483-4a89-9287-23f53b83e8b1",
+      "name": "Upload Voice Audio",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        -400,
+        1072
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "writer",
+            "type": "anyone",
+            "allowFileDiscovery": true
+          }
+        },
+        "options": {}
+      },
+      "id": "83de6552-2b4f-48cf-ad23-7251fe467532",
+      "name": "Set Access Permissions",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        -224,
+        1072
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    sound_urls: items.map(item => $('Upload Voice Audio').first().json.webContentLink)\n  }\n];"
+      },
+      "id": "16518bb0-dd05-48f9-aa19-850700069af5",
+      "name": "List Elements1",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -80,
+        864
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "id": "b61145d6-6a67-48d3-ae16-c067e38f44e2",
+      "name": "Pair Videos with Audio",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        144,
+        752
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.creatomate.com/v1/renders",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Set API Keys and Brand Config').item.json['Creatomate API Key'] }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"template_id\": \"{{ $('Set API Keys and Brand Config').item.json['Creatomate Template ID'] }}\",\n  \"modifications\": {\n    \"Video-1.source\": \"{{ $json.video_urls[0] }}\",\n    \"Video-2.source\": \"{{ $json.video_urls[1] }}\",\n    \"Video-3.source\": \"{{ $json.video_urls[2] }}\",\n    \"Video-4.source\": \"{{ $json.video_urls[3] }}\",\n    \"Video-5.source\": \"{{ $json.video_urls[4] }}\",\n    \"Audio-1.source\": \"{{ $json.sound_urls[0] }}\",\n    \"Text-1.text\": \"{{ $json.scene_titles[0] }}\",\n    \"Text-2.text\": \"{{ $json.scene_titles[1] }}\",\n    \"Text-3.text\": \"{{ $json.scene_titles[2] }}\",\n    \"Text-4.text\": \"{{ $json.scene_titles[3] }}\",\n    \"Text-5.text\": \"{{ $json.scene_titles[4] }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "30f8f234-905b-468d-bc20-7a52b7340aa3",
+      "name": "Render Final Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        320,
+        752
+      ],
+      "executeOnce": true,
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "minutes"
+      },
+      "id": "27b1a7ba-ca8e-48f5-bd51-d865d46e6c38",
+      "name": "Wait1",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        448,
+        752
+      ],
+      "webhookId": "206d0cdf-b71f-44a7-909f-97df885c471a",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "url": "=https://api.creatomate.com/v1/renders/{{ $('Render Final Video').item.json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Set API Keys and Brand Config').item.json['Creatomate API Key'] }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "90f86e5a-a6d7-432f-a05c-4d46b7b2d809",
+      "name": "Get Final Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        560,
+        752
+      ],
+      "executeOnce": true,
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "ed9595e9-9110-4f0c-9809-7ff63ce78143",
+      "name": "Get Raw File",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        688,
+        752
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "name": "=Organic-Reel-{{ $('Render Final Video').item.json.id }}.mp4",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "id": "2aeeca0a-5d8a-4378-be79-43c4d9789c20",
+      "name": "Upload Final Video",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        832,
+        752
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "writer",
+            "type": "anyone",
+            "allowFileDiscovery": true
+          }
+        },
+        "options": {}
+      },
+      "id": "c91d9402-0f21-4830-adf1-d0e5ed995b41",
+      "name": "Set Permissions",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        960,
+        752
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1cjd8p_yx-M-3gWLEd5TargtoB35cW-3y66AOTNMQrrM",
+          "cachedResultName": "Organic Content Pipeline"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "value": {
+            "id": "={{ $('Load Content Pipeline (Google Sheet)').first().json.id }}",
+            "production": "done",
+            "publishing": "for publishing",
+            "final_output": "={{ $('Upload Final Video').item.json.webContentLink }}"
+          },
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "id"
+          ]
+        },
+        "options": {}
+      },
+      "id": "33285985-a730-4758-a76b-a12662a6b1e0",
+      "name": "Update Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1120,
+        752
+      ],
+      "typeVersion": 4.5
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "=\ud83c\udf31 A new Organic Journals 9:16 Reel has been generated: {{ $json.final_output }}",
+        "options": {}
+      },
+      "id": "1c1f1625-baf3-428a-915c-6e43ce5735d5",
+      "name": "Notify me on Discord",
+      "type": "n8n-nodes-base.discord",
+      "position": [
+        1312,
+        752
+      ],
+      "typeVersion": 2,
+      "webhookId": "d95eb3b8-ce2d-4b54-bd2b-d636edb4fd3d"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a social media copywriter for Organic Journals.\nGenerate an engaging caption for Instagram and TikTok with educational value and relevant hashtags (#organicfarming, #soilbiology, #regenerativeagriculture, #gardentips).\n\nVoiceover Script Reference:\n{{ $('Generate Script').item.json.text }}",
+        "messages": {
+          "messageValues": []
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        2592,
+        960
+      ],
+      "id": "c46e01a1-9b12-4f67-8910-socialchn003",
+      "name": "Generate Description for Organic Socials"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        2592,
+        1160
+      ],
+      "id": "c46e01a1-9b12-4f67-8910-socialmdl003",
+      "name": "Gemini Model - Socials",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "XZRrHYTK9eePHmgw",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.upload-post.com/api/upload",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $('Generate Description for Organic Socials').item.json.text.replaceAll('\"', '') }}"
+            },
+            {
+              "name": "platform[]",
+              "value": "instagram"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "video",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ae01d18b-e6f1-4aa9-b0db-9c6748779c61",
+      "name": "Upload Video to Instagram",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3408,
+        752
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=DO NOT include any quotation marks in your response.\nYou are an agricultural content strategist for Organic Journals. Your job is to craft 5 high-retention video scene titles (5-8 words each) that diagnose an organic farming or soil mistake and deliver a practical natural fix.\nStructure: Problem Warning > Biological Indicator > Living Soil Diagnosis > Practical Organic Fix > Community CTA.\nReturn exactly 5 items separated by newlines without bullet numbers.\nTopic: {{ $json.idea || 'Spring soil preparation pitfalls that kill beneficial mycorrhizal fungi' }}",
+        "messages": {
+          "messageValues": []
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -1632,
+        848
+      ],
+      "id": "dba9dbda-9143-407f-9efd-2c365614fff9",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -1552,
+        1072
+      ],
+      "id": "4777bb86-3976-4a90-9b07-61f543a3073e",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "XZRrHYTK9eePHmgw",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Gemini Model - Flux Prompts": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Photorealistic Flux Prompts",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Model - Script": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Script",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Model - Socials": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Description for Organic Socials",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

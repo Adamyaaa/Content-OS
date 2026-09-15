@@ -1,0 +1,6 @@
+<USER_REQUEST>
+we know that this requires a change because there problem in a few nodes , so check every node after load content, even for content formatting or we also wanna use gemini everywhere chat gpt was used so make that change 
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-09-09T11:24:17+05:30.
+</ADDITIONAL_METADATA>

@@ -75,24 +75,41 @@ def extract_audio(video_path: Path, output_audio_path: Path) -> Path:
         
     return output_audio_path
 
+def is_duplicate_frame(img1_path: Path, img2_path: Path, threshold: float = 12.0) -> bool:
+    """Helper to determine if two images are visually duplicate."""
+    try:
+        from PIL import Image
+        with Image.open(img1_path) as i1, Image.open(img2_path) as i2:
+            i1 = i1.resize((32, 32)).convert("L")
+            i2 = i2.resize((32, 32)).convert("L")
+            
+            d1 = i1.getdata()
+            d2 = i2.getdata()
+            diff_sum = sum(abs(p1 - p2) for p1, p2 in zip(d1, d2))
+            
+            avg_diff = diff_sum / 1024.0
+            return avg_diff < threshold
+    except Exception:
+        return False
+
 def extract_representative_frames(video_path: Path, output_dir: Path, num_frames: int = 7) -> List[Path]:
     """
-    Extract representative frames distributed throughout the video (e.g. 0%, 15%, 30%, 45%, 60%, 75%, 90%).
+    Extract representative frames distributed throughout the video.
+    Removes duplicate/similar keyframes.
     """
     ffmpeg_bin = get_ffmpeg_path()
     output_dir.mkdir(parents=True, exist_ok=True)
     
     duration = get_video_duration(video_path)
     
-    # Distribution percentages across the video runtime
-    # Default: 7 frames [0.02, 0.15, 0.30, 0.45, 0.60, 0.75, 0.90]
-    fractions = [0.02, 0.15, 0.30, 0.45, 0.60, 0.75, 0.90][:num_frames]
+    # We extract more frames initially to filter out duplicates
+    candidate_count = max(20, num_frames * 3)
+    saved_candidates: List[Path] = []
     
-    saved_frames: List[Path] = []
-    
-    for idx, frac in enumerate(fractions, start=1):
+    for idx in range(1, candidate_count + 1):
+        frac = idx / (candidate_count + 1)
         timestamp = max(0.1, duration * frac)
-        frame_filename = output_dir / f"frame_{idx:02d}.jpg"
+        frame_filename = output_dir / f"cand_{idx:02d}.jpg"
         
         # -ss before -i for fast seek
         cmd = [
@@ -108,10 +125,41 @@ def extract_representative_frames(video_path: Path, output_dir: Path, num_frames
         
         res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, errors="replace")
         if res.returncode == 0 and frame_filename.exists() and frame_filename.stat().st_size > 0:
-            saved_frames.append(frame_filename)
+            saved_candidates.append(frame_filename)
             
-    # If keyframe seeking produced fewer frames, capture at least the initial frame
-    if not saved_frames:
+    # Filter duplicates
+    unique_frames: List[Path] = []
+    
+    for cand_path in saved_candidates:
+        if not unique_frames:
+            unique_frames.append(cand_path)
+            continue
+            
+        # Compare with the most recently accepted unique frame
+        if not is_duplicate_frame(unique_frames[-1], cand_path):
+            unique_frames.append(cand_path)
+            
+        if len(unique_frames) == num_frames:
+            break
+            
+    # Cleanup unused candidates
+    for cand_path in saved_candidates:
+        if cand_path not in unique_frames:
+            try:
+                cand_path.unlink()
+            except Exception:
+                pass
+                
+    # Rename unique frames sequentially
+    final_frames: List[Path] = []
+    for idx, u_path in enumerate(unique_frames, start=1):
+        final_path = output_dir / f"frame_{idx:02d}.jpg"
+        if u_path != final_path:
+            u_path.rename(final_path)
+        final_frames.append(final_path)
+            
+    # If keyframe seeking produced no frames, capture at least the initial frame
+    if not final_frames:
         frame_fallback = output_dir / "frame_01.jpg"
         cmd = [
             ffmpeg_bin,
@@ -123,6 +171,6 @@ def extract_representative_frames(video_path: Path, output_dir: Path, num_frames
         ]
         res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, errors="replace")
         if frame_fallback.exists():
-            saved_frames.append(frame_fallback)
+            final_frames.append(frame_fallback)
 
-    return saved_frames
+    return final_frames

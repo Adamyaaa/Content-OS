@@ -36,6 +36,7 @@ class GeneratedContent(BaseModel):
     cta: str = Field(..., description="Brand-aligned, non-pushy educational call to action")
     estimated_duration_seconds: int = Field(default=30, description="Estimated total length in seconds")
     voiceover_url: Optional[str] = Field(default=None, description="URL of generated neural voiceover audio")
+    voiceover_engine: Optional[str] = Field(default="Neural HD Engine", description="Voice synthesis engine used")
     rendered_video_url: Optional[str] = Field(default=None, description="URL of rendered 9:16 vertical video reel")
     deduplication_score: Optional[float] = Field(default=32.5, description="Cosine similarity score vs historical scripts")
     deduplication_status: Optional[str] = Field(default="Approved: Unique Angle (<70% threshold)", description="TRD logic gate status")
