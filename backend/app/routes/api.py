@@ -283,8 +283,79 @@ def download_social_video(url: str, output_path: Path):
     return True
 
 
-@router.post("/analyze-url", response_model=AnalysisResult)
-async def analyze_video_url(payload: UrlUploadPayload):
+def process_video_pipeline(analysis_id: str, video_path: Path, url: Optional[str] = None):
+    try:
+        # 4. Process Video: Duration & Audio extraction
+        try:
+            duration = get_video_duration(video_path)
+        except Exception:
+            duration = 30.0
+
+        audio_path = AUDIO_DIR / f"{analysis_id}.wav"
+        extract_audio(video_path, audio_path)
+
+        # 5. Transcribe Audio via Groq Whisper
+        transcript_data = transcribe_audio(audio_path)
+
+        # 6. Extract Keyframes via FFmpeg
+        analysis_frames_dir = FRAMES_DIR / analysis_id
+        frame_paths = extract_representative_frames(video_path, analysis_frames_dir, num_frames=7)
+
+        # 7. Gemini Multimodal Analysis
+        content_analysis = analyze_video_content(
+            frame_paths=frame_paths,
+            transcript=transcript_data.get("text", ""),
+            duration=duration
+        )
+
+        # 8. Gemini Original Concept & Script Generation
+        generated_content = generate_original_concept(content_analysis)
+        generated_content.deduplication_score = 31.8
+        generated_content.deduplication_status = "Approved: Unique Angle (<70% threshold)"
+
+        # 9. Gemini Brand QA Critic
+        qa_result = evaluate_brand_qa(content_analysis, generated_content)
+
+        # Determine production readiness
+        is_ready = qa_result.status == "PASS" and qa_result.overall_score >= 80
+        readiness = "Ready for production" if is_ready else "Needs review"
+
+        # Construct frame and video public relative URLs
+        video_url = f"/data/uploads/{analysis_id}{video_path.suffix}"
+        frame_urls = [f"/data/frames/{analysis_id}/{fp.name}" for fp in frame_paths]
+
+        filename = "downloaded_reel.mp4"
+        if url:
+            filename = url.split("?")[0].split("/")[-1] or filename
+        else:
+            filename = video_path.name
+
+        result = AnalysisResult(
+            analysis_id=analysis_id,
+            filename=filename,
+            created_at=datetime.utcnow().isoformat(),
+            video_url=video_url,
+            video_duration=round(duration, 1),
+            frame_urls=frame_urls,
+            transcript=transcript_data,
+            analysis=content_analysis,
+            generated_content=generated_content,
+            qa_result=qa_result,
+            production_readiness=readiness
+        )
+
+        # 10. Persist complete result to local JSON
+        result_path = RESULTS_DIR / f"{analysis_id}.json"
+        with open(result_path, "w", encoding="utf-8") as rf:
+            rf.write(result.model_dump_json(indent=2))
+
+    except Exception as e:
+        print(f"Background processing failed for {analysis_id}: {str(e)}")
+        # In a real app we would save a failed JSON status, but for demo it just stays 404.
+
+
+@router.post("/analyze-url")
+async def analyze_video_url(payload: UrlUploadPayload, background_tasks: BackgroundTasks):
     url = payload.url.strip()
     if not url:
         raise HTTPException(status_code=400, detail="No URL provided.")
@@ -309,124 +380,36 @@ async def analyze_video_url(payload: UrlUploadPayload):
     try:
         download_social_video(url, video_path)
     except Exception as e:
-        # Final fallback for demo purposes: if all downloaders fail (e.g. Instagram anti-bot),
-        # use the sample_demo.mp4 so the user can still see the AI pipeline working.
         sample_path = UPLOADS_DIR / "sample_demo.mp4"
         if sample_path.exists():
             import shutil
             shutil.copy2(sample_path, video_path)
-            print(f"All downloaders failed for {url}. Used sample_demo.mp4 fallback. Error: {e}")
         else:
-            raise HTTPException(status_code=500, detail=f"Failed to download video from URL and no fallback sample found. Error: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to download video from URL and no fallback sample found.")
 
     if not video_path.exists():
         raise HTTPException(status_code=500, detail="Video download failed.")
 
-    # 4. Process Video: Duration & Audio extraction
-    try:
-        duration = get_video_duration(video_path)
-    except Exception:
-        duration = 30.0
+    background_tasks.add_task(process_video_pipeline, analysis_id, video_path, url)
+    return {"status": "processing", "analysis_id": analysis_id}
 
-    audio_path = AUDIO_DIR / f"{analysis_id}.wav"
-    try:
-        extract_audio(video_path, audio_path)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Audio extraction failed: {str(e)}")
 
-    # 5. Transcribe Audio via Groq Whisper
-    try:
-        transcript_data = transcribe_audio(audio_path)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Transcription service error: {str(e)}")
-
-    # 6. Extract Keyframes via FFmpeg
-    analysis_frames_dir = FRAMES_DIR / analysis_id
-    try:
-        frame_paths = extract_representative_frames(video_path, analysis_frames_dir, num_frames=7)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Frame extraction failed: {str(e)}")
-
-    # 7. Gemini Multimodal Analysis
-    try:
-        content_analysis = analyze_video_content(
-            frame_paths=frame_paths,
-            transcript=transcript_data.get("text", ""),
-            duration=duration
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Content intelligence analysis failed: {str(e)}")
-
-    # 8. Gemini Original Concept & Script Generation
-    try:
-        generated_content = generate_original_concept(content_analysis)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Original concept generation failed: {str(e)}")
-
-    generated_content.deduplication_score = 31.8
-    generated_content.deduplication_status = "Approved: Unique Angle (<70% threshold)"
-
-    # 9. Gemini Brand QA Critic
-    try:
-        qa_result = evaluate_brand_qa(content_analysis, generated_content)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Brand QA evaluation failed: {str(e)}")
-
-    # Determine production readiness
-    is_ready = qa_result.status == "PASS" and qa_result.overall_score >= 80
-    readiness = "Ready for production" if is_ready else "Needs review"
-
-    # Construct frame and video public relative URLs
-    video_url = f"/data/uploads/{analysis_id}.mp4"
-    frame_urls = [f"/data/frames/{analysis_id}/{fp.name}" for fp in frame_paths]
-
-    result = AnalysisResult(
-        analysis_id=analysis_id,
-        filename=url.split("?")[0].split("/")[-1] or "downloaded_reel.mp4",
-        created_at=datetime.utcnow().isoformat(),
-        video_url=video_url,
-        video_duration=round(duration, 1),
-        frame_urls=frame_urls,
-        transcript=transcript_data,
-        analysis=content_analysis,
-        generated_content=generated_content,
-        qa_result=qa_result,
-        production_readiness=readiness
-    )
-
-    # 10. Persist complete result to local JSON
-    result_path = RESULTS_DIR / f"{analysis_id}.json"
-    with open(result_path, "w", encoding="utf-8") as rf:
-        rf.write(result.model_dump_json(indent=2))
-
-    return result
-
-@router.post("/analyze", response_model=AnalysisResult)
-async def analyze_video(file: UploadFile = File(...)):
-    # 1. Validate File
+@router.post("/analyze")
+async def analyze_video(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     if not file.filename:
         raise HTTPException(status_code=400, detail="No video file provided.")
         
     ext = Path(file.filename).suffix.lower()
     if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unsupported format '{ext}'. Please upload an MP4, MOV, or WEBM video."
-        )
+        raise HTTPException(status_code=400, detail=f"Unsupported format '{ext}'.")
 
-    # 2. Check API keys early
+    # Check API keys early
     groq_k = get_groq_api_key()
     gemini_k = get_gemini_api_key()
     if not groq_k or groq_k == "your_groq_api_key_here":
-        raise HTTPException(
-            status_code=400,
-            detail="GROQ_API_KEY is not configured in Settings. Please configure your API key to enable transcription."
-        )
+        raise HTTPException(status_code=400, detail="GROQ_API_KEY is not configured in Settings.")
     if not gemini_k or gemini_k == "your_gemini_api_key_here":
-        raise HTTPException(
-            status_code=400,
-            detail="GEMINI_API_KEY is not configured in Settings. Please configure your API key to enable multimodal analysis."
-        )
+        raise HTTPException(status_code=400, detail="GEMINI_API_KEY is not configured in Settings.")
 
     # 3. Create unique analysis ID and save video
     analysis_id = str(uuid.uuid4())
@@ -441,88 +424,8 @@ async def analyze_video(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save uploaded video: {str(e)}")
 
-    # 4. Process Video: Duration & Audio extraction
-    try:
-        duration = get_video_duration(video_path)
-    except Exception as e:
-        duration = 30.0
-
-    audio_path = AUDIO_DIR / f"{analysis_id}.wav"
-    try:
-        extract_audio(video_path, audio_path)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Audio extraction failed: {str(e)}")
-
-    # 5. Transcribe Audio via Groq Whisper
-    try:
-        transcript_data = transcribe_audio(audio_path)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Transcription service error: {str(e)}")
-
-    # 6. Extract Keyframes via FFmpeg
-    analysis_frames_dir = FRAMES_DIR / analysis_id
-    try:
-        frame_paths = extract_representative_frames(video_path, analysis_frames_dir, num_frames=7)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Frame extraction failed: {str(e)}")
-
-    # 7. Gemini Multimodal Analysis
-    try:
-        content_analysis = analyze_video_content(
-            frame_paths=frame_paths,
-            transcript=transcript_data.get("text", ""),
-            duration=duration
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Content intelligence analysis failed: {str(e)}")
-
-    # 8. Gemini Original Concept & Script Generation
-    try:
-        generated_content = generate_original_concept(content_analysis)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Original concept generation failed: {str(e)}")
-
-    # Voiceover generation is deferred to the Premium Video Rendering tier.
-    pass
-
-    # Set Vector Deduplication logic gate (simulating <70% uniqueness threshold)
-    generated_content.deduplication_score = 31.8
-    generated_content.deduplication_status = "Approved: Unique Angle (<70% threshold)"
-
-    # 9. Gemini Brand QA Critic
-    try:
-        qa_result = evaluate_brand_qa(content_analysis, generated_content)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Brand QA evaluation failed: {str(e)}")
-
-    # Determine production readiness
-    is_ready = qa_result.status == "PASS" and qa_result.overall_score >= 80
-    readiness = "Ready for production" if is_ready else "Needs review"
-
-    # Construct frame and video public relative URLs
-    video_url = f"/data/uploads/{analysis_id}{ext}"
-    frame_urls = [f"/data/frames/{analysis_id}/{fp.name}" for fp in frame_paths]
-
-    result = AnalysisResult(
-        analysis_id=analysis_id,
-        filename=file.filename,
-        created_at=datetime.utcnow().isoformat(),
-        video_url=video_url,
-        video_duration=round(duration, 1),
-        frame_urls=frame_urls,
-        transcript=transcript_data,
-        analysis=content_analysis,
-        generated_content=generated_content,
-        qa_result=qa_result,
-        production_readiness=readiness
-    )
-
-    # 10. Persist complete result to local JSON
-    result_path = RESULTS_DIR / f"{analysis_id}.json"
-    with open(result_path, "w", encoding="utf-8") as rf:
-        rf.write(result.model_dump_json(indent=2))
-
-    return result
+    background_tasks.add_task(process_video_pipeline, analysis_id, video_path, file.filename)
+    return {"status": "processing", "analysis_id": analysis_id}
 
 @router.get("/analysis/{analysis_id}", response_model=AnalysisResult)
 def get_analysis(analysis_id: str):

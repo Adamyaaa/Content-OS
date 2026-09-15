@@ -54,7 +54,20 @@ export default function App() {
 
     try {
       const result = await analyzeVideo(file);
-      setAnalysisResult(result);
+      if (result.status === 'processing') {
+        let finalResult = null;
+        while (!finalResult) {
+          await new Promise(r => setTimeout(r, 3000));
+          try {
+            finalResult = await fetchAnalysis(result.analysis_id);
+          } catch (e) {
+            // still processing or not found yet
+          }
+        }
+        setAnalysisResult(finalResult);
+      } else {
+        setAnalysisResult(result);
+      }
       await refreshData();
     } catch (err) {
       console.error('Analysis error:', err);
@@ -81,7 +94,22 @@ export default function App() {
         throw new Error(errorData.detail || 'Failed to analyze URL');
       }
       const result = await response.json();
-      setAnalysisResult(result);
+      
+      if (result.status === 'processing') {
+        let finalResult = null;
+        while (!finalResult) {
+          await new Promise(r => setTimeout(r, 3000));
+          try {
+            finalResult = await fetchAnalysis(result.analysis_id);
+          } catch (e) {
+            // still processing or not found yet
+          }
+        }
+        setAnalysisResult(finalResult);
+      } else {
+        setAnalysisResult(result);
+      }
+      
       await refreshData();
     } catch (err) {
       console.error('Analysis error:', err);
