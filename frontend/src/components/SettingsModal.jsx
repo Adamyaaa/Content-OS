@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 export default function SettingsModal({ isOpen, onClose, onSettingsUpdated }) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [settingsData, setSettingsData] = useState(null);
   const [showKeys, setShowKeys] = useState({});
@@ -32,16 +32,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated }) {
     rapidapi_key: ''
   });
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchSettings();
-      setSaveSuccess(false);
-      setTestResults({});
-    }
-  }, [isOpen]);
-
   const fetchSettings = async () => {
-    setLoading(true);
     try {
       const res = await fetch('https://organic-content-os-backend.onrender.com/api/settings');
       if (res.ok) {
@@ -50,10 +41,16 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated }) {
       }
     } catch (err) {
       console.error('Failed to load settings:', err);
-    } finally {
-      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchSettings();
+      setSaveSuccess(false);
+      setTestResults({});
+    }
+  }, [isOpen]);
 
   const toggleShowKey = (field) => {
     setShowKeys((prev) => ({ ...prev, [field]: !prev[field] }));
@@ -95,16 +92,13 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated }) {
     }
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  const handleSave = async (provider, fieldName) => {
+    const val = formKeys[fieldName];
+    if (!val || !val.trim()) return;
+
+    setLoading(provider);
     try {
-      const payload = {};
-      Object.entries(formKeys).forEach(([k, v]) => {
-        if (v && v.trim()) {
-          payload[k] = v.trim();
-        }
-      });
+      const payload = { [fieldName]: val.trim() };
 
       const res = await fetch('https://organic-content-os-backend.onrender.com/api/settings', {
         method: 'POST',
@@ -115,13 +109,14 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated }) {
       if (res.ok) {
         setSaveSuccess(true);
         await fetchSettings();
+        setFormKeys(prev => ({ ...prev, [fieldName]: '' }));
         if (onSettingsUpdated) onSettingsUpdated();
         setTimeout(() => setSaveSuccess(false), 3000);
       }
     } catch (err) {
       console.error('Save failed:', err);
     } finally {
-      setLoading(false);
+      setLoading(null);
     }
   };
 
@@ -220,7 +215,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated }) {
         </div>
 
         {/* Modal Body */}
-        <form onSubmit={handleSave} className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+        <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
           {saveSuccess && (
             <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center space-x-2 animate-in fade-in">
               <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
@@ -299,6 +294,16 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated }) {
 
                     <button
                       type="button"
+                      disabled={loading === item.provider || !formKeys[item.field]}
+                      onClick={() => handleSave(item.provider, item.field)}
+                      className="px-3 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg border border-emerald-600 transition shrink-0 disabled:opacity-50 flex items-center space-x-1"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      <span>{loading === item.provider ? 'Saving...' : 'Save'}</span>
+                    </button>
+
+                    <button
+                      type="button"
                       disabled={isTesting || (!formKeys[item.field] && !item.isConfigured)}
                       onClick={() => handleTestKey(item.provider, formKeys[item.field], item.field)}
                       className={`px-3 py-2 text-xs font-semibold rounded-lg border transition shrink-0 ${
@@ -339,7 +344,6 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated }) {
             </p>
           </div>
 
-          {/* Modal Actions */}
           <div className="pt-2 border-t border-slate-200 flex items-center justify-end space-x-2.5">
             <button
               type="button"
@@ -348,16 +352,8 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated }) {
             >
               Close
             </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex items-center space-x-1.5 px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md shadow-emerald-600/20 transition disabled:opacity-50"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>{loading ? 'Saving...' : 'Save & Apply Keys'}</span>
-            </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
