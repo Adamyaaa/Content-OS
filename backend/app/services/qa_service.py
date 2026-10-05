@@ -9,13 +9,14 @@ from backend.app.utils.json_helper import clean_json_response
 
 def evaluate_brand_qa(
     analysis: ContentAnalysis,
-    generated: GeneratedContent
+    generated: GeneratedContent,
+    custom_api_key: str = None
 ) -> QAResult:
     """
     Run an independent QA critic evaluation against brand guardrails,
     unsupported claims (especially 'chemical-free'), originality, and hook strength.
     """
-    api_key = get_gemini_api_key()
+    api_key = (custom_api_key or get_gemini_api_key()).strip()
     if not api_key or api_key == "your_gemini_api_key_here":
         raise ValueError("Gemini API Key is not configured. Please configure your API key in Settings.")
         

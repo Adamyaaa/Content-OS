@@ -26,6 +26,43 @@ logger = logging.getLogger("telegram_bot")
 logging.basicConfig(level=logging.INFO)
 
 TELEGRAM_API_BASE = "https://api.telegram.org"
+USER_KEYS_FILE = DATA_DIR / "user_telegram_keys.json"
+
+def load_user_custom_keys() -> Dict[str, str]:
+    if USER_KEYS_FILE.exists():
+        try:
+            with open(USER_KEYS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def save_user_custom_key(chat_id: int, api_key: str):
+    keys = load_user_custom_keys()
+    keys[str(chat_id)] = api_key.strip()
+    try:
+        with open(USER_KEYS_FILE, "w", encoding="utf-8") as f:
+            json.dump(keys, f, indent=2)
+    except Exception as e:
+        logger.error(f"Failed to persist custom key for chat {chat_id}: {e}")
+
+def delete_user_custom_key(chat_id: int):
+    keys = load_user_custom_keys()
+    if str(chat_id) in keys:
+        del keys[str(chat_id)]
+        try:
+            with open(USER_KEYS_FILE, "w", encoding="utf-8") as f:
+                json.dump(keys, f, indent=2)
+        except Exception as e:
+            logger.error(f"Failed to delete custom key for chat {chat_id}: {e}")
+
+def get_effective_gemini_key(chat_id: int) -> str:
+    """Returns the user's custom key if configured, otherwise falls back to the server's default key."""
+    keys = load_user_custom_keys()
+    user_key = keys.get(str(chat_id), "").strip()
+    if user_key:
+        return user_key
+    return get_gemini_api_key()
 
 def get_bot_url(token: Optional[str] = None) -> str:
     bot_token = token or get_telegram_bot_token()
@@ -113,14 +150,15 @@ async def download_telegram_file(file_id: str, destination_path: Path) -> bool:
 
 # --- Core Business Logic Handlers ---
 
-def build_analysis_from_text(topic_text: str) -> ContentAnalysis:
+def build_analysis_from_text(topic_text: str, custom_key: Optional[str] = None) -> ContentAnalysis:
     """Uses Gemini to turn a rough idea/topic into a full structural content framework."""
     from google import genai
     from google.genai import types
     from backend.app.config.brand import BRAND_CONFIG
     from backend.app.utils.json_helper import clean_json_response
 
-    client = genai.Client(api_key=get_gemini_api_key())
+    key = (custom_key or get_gemini_api_key()).strip()
+    client = genai.Client(api_key=key)
     prompt = f"""
     You are an expert short-form video strategist for '{BRAND_CONFIG.get('brand_name', 'Organic Journals')}'.
     Analyze this raw content idea or topic and map it into a high-retention short-form video architecture.
@@ -168,9 +206,56 @@ async def handle_start_command(chat_id: int):
         "  <i>Paste any public video URL to deconstruct its hook & viral formula</i>\n\n"
         "• <b>A Video or Audio File:</b>\n"
         "  <i>Upload directly to run Whisper transcription + multimodal AI</i>\n\n"
+        "🔑 <b>API Key Settings:</b>\n"
+        "• The bot uses the server's default Gemini key automatically.\n"
+        "• Want to use your own key? Type: <code>/setkey AIzaSy...</code>\n"
+        "• Check key status: <code>/mykey</code>\n"
+        "• Reset to default: <code>/clearkey</code>\n\n"
         "⚡ <i>Every script is automatically vetted by our Brand QA Critic to strictly avoid false claims or misleading pseudo-science.</i>"
     )
     await send_message(chat_id, welcome_text)
+
+async def handle_set_key_command(chat_id: int, text: str):
+    parts = text.split(maxsplit=1)
+    if len(parts) < 2 or len(parts[1].strip()) < 15:
+        await send_message(
+            chat_id,
+            "⚠️ <b>Usage:</b> <code>/setkey YOUR_GEMINI_API_KEY</code>\n\n"
+            "Get a key for free from Google AI Studio: https://aistudio.google.com/"
+        )
+        return
+
+    new_key = parts[1].strip()
+    # Test key with Gemini
+    await send_chat_action(chat_id, "typing")
+    try:
+        from google import genai
+        client = genai.Client(api_key=new_key)
+        resp = client.models.generate_content(model="gemini-3.6-flash", contents="ping")
+        save_user_custom_key(chat_id, new_key)
+        await send_message(
+            chat_id,
+            f"✅ <b>Custom Gemini API Key Connected!</b>\n\n"
+            f"All your future scripts and analyses will use your custom key (ending in <code>...{new_key[-4:]}</code>).\n\n"
+            f"To revert to server default anytime, type <code>/clearkey</code>."
+        )
+    except Exception as e:
+        await send_message(chat_id, f"❌ <b>Key Validation Failed:</b> {str(e)}\nPlease verify the key.")
+
+async def handle_clear_key_command(chat_id: int):
+    delete_user_custom_key(chat_id)
+    await send_message(chat_id, "🔄 <b>Reset!</b> You are now using the server's default Google Gemini API key.")
+
+async def handle_my_key_command(chat_id: int):
+    keys = load_user_custom_keys()
+    user_key = keys.get(str(chat_id), "").strip()
+    if user_key:
+        masked = f"{user_key[:4]}...{user_key[-4:]}"
+        await send_message(chat_id, f"🔑 <b>Active Key:</b> Custom Gemini Key (<code>{masked}</code>)\nType <code>/clearkey</code> to reset.")
+    else:
+        server_key = get_gemini_api_key()
+        masked = f"{server_key[:4]}...{server_key[-4:]}" if server_key else "Not set"
+        await send_message(chat_id, f"🔑 <b>Active Key:</b> Server Default Key (<code>{masked}</code>)\nType <code>/setkey YOUR_KEY</code> to use your own.")
 
 def build_script_action_keyboard(analysis_id: str) -> Dict[str, Any]:
     return {
@@ -191,16 +276,17 @@ async def handle_text_idea(chat_id: int, user_text: str):
     await send_message(chat_id, f"🌿 <i>Analyzing idea:</i> <b>\"{user_text[:80]}\"</b>\n<i>Synthesizing brand script & running QA audit...</i>")
 
     analysis_id = str(uuid.uuid4())
+    effective_key = get_effective_gemini_key(chat_id)
 
     try:
         # 1. Structural extraction
-        content_analysis = build_analysis_from_text(user_text)
+        content_analysis = build_analysis_from_text(user_text, custom_key=effective_key)
 
         # 2. Original script generation
-        generated_content = generate_original_concept(content_analysis)
+        generated_content = generate_original_concept(content_analysis, custom_api_key=effective_key)
 
         # 3. Brand QA audit
-        qa_result = evaluate_brand_qa(content_analysis, generated_content)
+        qa_result = evaluate_brand_qa(content_analysis, generated_content, custom_api_key=effective_key)
 
         # 4. Save analysis result JSON
         is_ready = qa_result.status == "PASS" and qa_result.overall_score >= 80
@@ -447,9 +533,10 @@ async def handle_callback_query_event(callback_query: Dict[str, Any]):
 
         topic = data_dict.get("analysis", {}).get("topic", "Organic Agriculture")
         orig_hook = data_dict.get("generated_content", {}).get("hook", "")
+        effective_key = get_effective_gemini_key(chat_id)
 
         from google import genai
-        client = genai.Client(api_key=get_gemini_api_key())
+        client = genai.Client(api_key=effective_key)
         prompt = f"Generate 3 distinct, high-converting opening hooks for a reel on '{topic}'. The original hook was '{orig_hook}'. Keep them punchy and evidence-based for Organic Journals. Return 3 numbered bullet points."
         resp = client.models.generate_content(model="gemini-3.6-flash", contents=prompt)
 
@@ -482,6 +569,18 @@ async def process_telegram_update(update: Dict[str, Any]):
     # Commands
     if text == "/start" or text == "/help":
         await handle_start_command(chat_id)
+        return
+
+    if text.startswith("/setkey"):
+        await handle_set_key_command(chat_id, text)
+        return
+
+    if text == "/clearkey":
+        await handle_clear_key_command(chat_id)
+        return
+
+    if text == "/mykey":
+        await handle_my_key_command(chat_id)
         return
 
     # Video Upload (direct file)

@@ -7,12 +7,12 @@ from backend.app.models.schemas import ContentAnalysis, GeneratedContent
 from backend.app.prompts.generation_prompt import GENERATION_SYSTEM_PROMPT, get_generation_prompt
 from backend.app.utils.json_helper import clean_json_response
 
-def generate_original_concept(analysis: ContentAnalysis) -> GeneratedContent:
+def generate_original_concept(analysis: ContentAnalysis, custom_api_key: str = None) -> GeneratedContent:
     """
     Generate an original content concept, voiceover script, and scene breakdown
     based on the analyzed structural pattern, tailored for Organic Journals.
     """
-    api_key = get_gemini_api_key()
+    api_key = (custom_api_key or get_gemini_api_key()).strip()
     if not api_key or api_key == "your_gemini_api_key_here":
         raise ValueError("Gemini API Key is not configured. Please configure your API key in Settings.")
         
