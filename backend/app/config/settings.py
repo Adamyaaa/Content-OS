@@ -19,6 +19,8 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "").strip()
 PIAPI_KEY = os.getenv("PIAPI_KEY", "").strip()
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY", "").strip()
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+TELEGRAM_ALLOWED_CHAT_IDS = os.getenv("TELEGRAM_ALLOWED_CHAT_IDS", "").strip()
 
 def get_groq_api_key() -> str:
     return os.getenv("GROQ_API_KEY", GROQ_API_KEY).strip()
@@ -38,8 +40,17 @@ def get_piapi_key() -> str:
 def get_rapidapi_key() -> str:
     return os.getenv("RAPIDAPI_KEY", RAPIDAPI_KEY).strip()
 
+def get_telegram_bot_token() -> str:
+    return os.getenv("TELEGRAM_BOT_TOKEN", TELEGRAM_BOT_TOKEN).strip()
+
+def get_telegram_allowed_chat_ids() -> list[str]:
+    raw = os.getenv("TELEGRAM_ALLOWED_CHAT_IDS", TELEGRAM_ALLOWED_CHAT_IDS).strip()
+    if not raw:
+        return []
+    return [cid.strip() for cid in raw.split(",") if cid.strip()]
+
 def reload_settings():
-    global GROQ_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, ELEVENLABS_API_KEY, PIAPI_KEY, RAPIDAPI_KEY
+    global GROQ_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, ELEVENLABS_API_KEY, PIAPI_KEY, RAPIDAPI_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_ALLOWED_CHAT_IDS
     load_dotenv(PROJECT_ROOT / ".env", override=True)
     load_dotenv(BACKEND_DIR / ".env", override=True)
     GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
@@ -48,6 +59,8 @@ def reload_settings():
     ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "").strip()
     PIAPI_KEY = os.getenv("PIAPI_KEY", "").strip()
     RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY", "").strip()
+    TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+    TELEGRAM_ALLOWED_CHAT_IDS = os.getenv("TELEGRAM_ALLOWED_CHAT_IDS", "").strip()
 
 def update_api_keys(new_keys: dict) -> bool:
     """Updates .env file and reloads in-memory variables without restarting server."""

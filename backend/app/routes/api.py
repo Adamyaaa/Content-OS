@@ -4,10 +4,17 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from backend.app.services.supabase_service import (
+    insert_trends,
+    get_pending_trends,
+    update_trend_status,
+    get_trend_by_id
+)
 from backend.app.config import (
     UPLOADS_DIR,
     AUDIO_DIR,
@@ -604,3 +611,86 @@ def render_video_endpoint(analysis_id: str):
         "rendered_video_url": rendered_url
     }
 
+# --- PROACTIVE & REACTIVE PIPELINE ENDPOINTS ---
+
+security = HTTPBearer()
+
+def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    expected_token = os.environ.get("CONTENT_OS_API_TOKEN", "default_secret_token")
+    if credentials.credentials != expected_token:
+        raise HTTPException(status_code=401, detail="Invalid or missing API Token")
+    return credentials.credentials
+
+class TrendItem(BaseModel):
+    source_url: str = ""
+    topic: str = ""
+    hook_idea: str = ""
+    source_platform: str = "unknown"
+
+class TrendPayload(BaseModel):
+    trends: List[TrendItem]
+
+class ClientIdeaPayload(BaseModel):
+    client_input: str
+
+@router.post("/trends/ingest")
+async def ingest_trends_endpoint(payload: TrendPayload, token: str = Depends(verify_api_key)):
+    """1. Proactive: n8n posts scraped trends here"""
+    try:
+        trends_dicts = [t.model_dump() for t in payload.trends]
+        insert_trends(trends_dicts)
+        return {"status": "success", "inserted": len(trends_dicts)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/trends/pending")
+async def get_pending_trends_endpoint(token: str = Depends(verify_api_key)):
+    """2. Proactive: OpenClaw fetches pending trends to pitch"""
+    try:
+        trends = get_pending_trends()
+        return {"status": "success", "trends": trends}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/trends/approve")
+async def approve_trend_endpoint(trend_id: str, token: str = Depends(verify_api_key)):
+    """3. Proactive: OpenClaw approves a trend"""
+    try:
+        trend = get_trend_by_id(trend_id)
+        if not trend:
+            raise HTTPException(status_code=404, detail="Trend not found")
+        
+        # Here we mock the generation for the demo, using the hook_idea
+        mock_generated_script = f"AI generated script based on: {trend.get('hook_idea')}"
+        mock_qa_score = 95
+
+        update_trend_status(trend_id, "approved", generated_script_id=f"script_{uuid.uuid4().hex[:8]}")
+        
+        return {
+            "status": "success",
+            "script": mock_generated_script,
+            "qa_score": mock_qa_score,
+            "message": "Script generated and QA passed."
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/generate/reactive")
+async def process_client_idea_endpoint(payload: ClientIdeaPayload, token: str = Depends(verify_api_key)):
+    """4. Reactive: Client sends custom inspiration via Telegram"""
+    try:
+        # Here we mock the processing
+        # 1. Run analysis prompt to extract mechanics
+        # 2. Run vector check against PatternLibraryView
+        # 3. Generate script & QA
+        mock_generated_script = f"Reactive script tailored from input: {payload.client_input[:50]}..."
+        mock_qa_score = 92
+
+        return {
+            "status": "success",
+            "script": mock_generated_script,
+            "qa_score": mock_qa_score,
+            "message": "Reactive asset generated."
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

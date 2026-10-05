@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from backend.app.config import DATA_DIR, PORT, HOST
 from backend.app.routes.api import router as api_router
+from backend.app.routes.telegram_routes import router as telegram_router
 
 app = FastAPI(
     title="Organic Content OS API",
@@ -22,8 +23,9 @@ app.add_middleware(
 # Mount local data directory for static media serving (video previews, keyframes)
 app.mount("/data", StaticFiles(directory=str(DATA_DIR)), name="data")
 
-# Register API Router
+# Register API Routers
 app.include_router(api_router)
+app.include_router(telegram_router)
 
 @app.get("/")
 def root():
